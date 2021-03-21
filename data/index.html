@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Wortuhr</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue_grey-light_green.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header
+    mdl-layout--fixed-tabs">
+        <header class="mdl-layout__header">
+            <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+                <a href="#fixed-tab-1" class="mdl-layout__tab is-active">Uhr</a>
+                <a href="#fixed-tab-2" class="mdl-layout__tab">Hintergrund</a>
+            </div>
+        </header>
+        <main class="mdl-layout__content">
+            <section class="mdl-layout__tab-panel is-active" id="fixed-tab-1">
+                <div class="page-content mdl-grid">
+                    <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--4dp" id="cornerBox">
+                        <h4 class="title">Farbe/ Helligkeit</h4>
+                        <div id="clockColorPicker" class="wrapper mdl-card__supporting-text"></div>
+                    </div>
+                    <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--4dp" id="cornerBox">
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" id="center"
+                            onclick="wifiDisconnect()">
+                            Internetverbindung trennen
+                        </button>
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" id="center"
+                            onclick="clockWhite()">
+                            Weiss
+                        </button>
+                        <div class="wrapper">
+                            <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="clockRainbow" id="clockRainbowSwitch">
+                                <input type="checkbox" id="clockRainbow" class="mdl-switch__input"
+                                    onclick="toggleClockRainbow()">
+                                <span class="mdl-switch__label">Regenbogen</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="mdl-layout__tab-panel" id="fixed-tab-2">
+                <div class="page-content mdl-grid">
+                    <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--4dp" id="cornerBox">
+                        <h4 class="title">Farbe/ Helligkeit</h4>
+                        <div id="backgroundColorPicker" class="wrapper mdl-card__supporting-text"></div>
+                    </div>
+                    <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--4dp" id="cornerBox">
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" id="center"
+                            onclick="wifiDisconnect()">
+                            Internetverbindung trennen
+                        </button>
+                        <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" id="center"
+                            onclick="backgroundWhite()">
+                            Weiss
+                        </button>
+                        <div class="wrapper">
+                            <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="backgroundRainbow" id="backgroundRainbowSwitch">
+                                <input type="checkbox" id="backgroundRainbow" class="mdl-switch__input"
+                                    onclick="toggleBackgroundRainbow()">
+                                <span class="mdl-switch__label">Regenbogen</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>
+<script>
+    var gateway = `ws://${window.location.hostname}/ws`;
+    var websocket;
+    var clockColorPicker = new iro.ColorPicker('#clockColorPicker', {
+        wheelLightness: false,
+    });
+    var backgroundColorPicker = new iro.ColorPicker('#backgroundColorPicker', {
+        wheelLightness: false,
+    });
+
+    window.addEventListener('load', onLoad);
+
+    clockColorPicker.on('input:end', function (color) {
+        console.log(JSON.stringify(color.hsv));
+        websocket.send("clock" + JSON.stringify(color.hsv));
+    });
+
+    backgroundColorPicker.on('input:end', function (color) {
+        websocket.send("background" + JSON.stringify(color.hsv));
+    });
+
+    function initWebSocket() {
+        console.log('Trying to open a WebSocket connection...');
+        websocket = new WebSocket(gateway);
+        websocket.onopen = onOpen;
+        websocket.onclose = onClose;
+        websocket.onmessage = onMessage;
+    }
+
+    function onOpen(event) {
+        console.log('Connection opened');
+    }
+
+    function onClose(event) {
+        console.log('Connection closed');
+        setTimeout(initWebSocket, 2000);
+    }
+
+    function onMessage(event) {
+        if (event.data.includes("clock")) {
+            clockColorPicker.color.hsv = JSON.parse(event.data.replace("clock", ""));
+        }
+        else if (event.data.includes("background")) {
+            backgroundColorPicker.color.hsv = JSON.parse(event.data.replace("background", ""));
+        }
+        else if (event.data.includes("clRa")) {
+            let state = event.data.replace("clRa","");
+            if(state == "1"){
+                document.getElementById("clockRainbowSwitch").MaterialSwitch.on();
+            }
+            else{
+                document.getElementById("clockRainbowSwitch").MaterialSwitch.off();
+            }
+        }
+        else if (event.data.includes("baRa")) {
+            let state = event.data.replace("baRa","");
+            if(state == "1"){
+                document.getElementById("backgroundRainbowSwitch").MaterialSwitch.on();
+            }
+            else{
+                document.getElementById("backgroundRainbowSwitch").MaterialSwitch.off();
+            }
+        }
+    }
+
+    function onLoad(event) {
+        initWebSocket();
+    }
+
+    function wifiDisconnect() {
+        websocket.send("disconnect");
+    }
+
+    function toggleClockRainbow() {
+        websocket.send("clRa");
+    }
+
+    function toggleBackgroundRainbow() {
+        websocket.send("baRa");
+    }
+
+    function clockWhite(){
+        websocket.send("clock" + "{'h':0,'s':0,'v':100}");
+    }
+
+    function backgroundWhite(){
+        websocket.send("background" + "{'h':0,'s':0,'v':100}");
+    }
+</script>

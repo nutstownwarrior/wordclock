@@ -1,0 +1,23 @@
+#center{
+    margin: auto;
+}
+#clockColor{
+    margin: auto;
+}
+#backgroundColor{
+    margin: auto;
+}
+h4{
+    text-align: center;
+}
+.wrapper{
+    margin: auto;
+    text-align: -webkit-center;
+}
+#cornerBox {
+    border-radius: 7px;
+    margin: auto;
+    margin-top: 1vh;
+    width: 100vm;
+    box-shadow: 0 0 10px -4px;
+}
