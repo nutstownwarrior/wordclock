@@ -8,6 +8,7 @@
 #include <WiFiUdp.h>
 #include <FastLED.h>
 #include <ArduinoJson.h>
+#include <TimeLib.h>
 
 #define NUM_LEDS 156
 #define DATA_PIN 4
@@ -18,6 +19,7 @@ AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600);
+time_t getNtpTime();
 CRGB leds[NUM_LEDS];
 DynamicJsonDocument clockDoc(1024);
 DynamicJsonDocument backgroundDoc(1024);
@@ -57,6 +59,63 @@ bool clockRainbow = false;
 bool backgroundRainbow = false;
 
 byte ledList[NUM_LEDS];
+
+String getValue(String data, char separator, int index)
+{
+  int found = 0;
+  int strIndex[] = {0, -1};
+  int maxIndex = data.length() - 1;
+
+  for (int i = 0; i <= maxIndex && found <= index; i++)
+  {
+    if (data.charAt(i) == separator || i == maxIndex)
+    {
+      found++;
+      strIndex[0] = strIndex[1] + 1;
+      strIndex[1] = (i == maxIndex) ? i + 1 : i;
+    }
+  }
+
+  return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
+
+bool isLastSundayOver(int weekday, int day){
+  int daysToSunday = 7 - weekday;
+  int daysLeft = 31 - day;
+  if(daysLeft > 6){
+    return false;
+  }
+  else if((day + daysToSunday) > 31){
+    return true;
+  }
+  else if((day == 31) && (weekday == 6)){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+int getTimeOffset()
+{
+  int dateMonth = month(timeClient.getEpochTime());
+  int dateDay = day(timeClient.getEpochTime());
+  int weekday = timeClient.getDay();
+  if ((dateMonth > 3) && (dateMonth < 10))
+  {
+    return 1;
+  }
+  else if ((dateMonth == 3) && isLastSundayOver(weekday, dateDay))
+  {
+    return 1;
+  }
+  else if (dateMonth == 10 && isLastSundayOver(weekday, dateDay)){
+    return 0;
+  }
+  else{
+    return 0;
+  }
+}
 
 void notifyClients(int dataType)
 {
@@ -351,7 +410,7 @@ void setup()
 void loop()
 {
   timeClient.update();
-  int hour = timeClient.getHours();
+  int hour = timeClient.getHours() + getTimeOffset();
   int minute = timeClient.getMinutes();
 
   changeBackground();
@@ -457,7 +516,7 @@ void loop()
   case 13:
   {
     unselectLeds(zwoelf);
-    if (minute <= 5)
+    if (minute < 5)
       selectLeds(ein);
     else
       selectLeds(eins);
