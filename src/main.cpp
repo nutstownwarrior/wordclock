@@ -516,8 +516,10 @@ void loop()
   case 13:
   {
     unselectLeds(zwoelf);
-    if (minute < 5)
+    if (minute < 5){
+      unselectLeds(eins);
       selectLeds(ein);
+    }
     else
       selectLeds(eins);
     break;
