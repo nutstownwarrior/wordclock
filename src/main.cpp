@@ -18,7 +18,7 @@
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600);
+NTPClient timeClient(ntpUDP, "pool.ntp.org");
 time_t getNtpTime();
 CRGB leds[NUM_LEDS];
 DynamicJsonDocument clockDoc(1024);
@@ -103,17 +103,17 @@ int getTimeOffset()
   int weekday = timeClient.getDay();
   if ((dateMonth > 3) && (dateMonth < 10))
   {
-    return 1;
+    return 7200;
   }
   else if ((dateMonth == 3) && isLastSundayOver(weekday, dateDay))
   {
-    return 1;
+    return 7200;
   }
   else if (dateMonth == 10 && isLastSundayOver(weekday, dateDay)){
-    return 0;
+    return 3600;
   }
   else{
-    return 0;
+    return 3600;
   }
 }
 
@@ -409,8 +409,9 @@ void setup()
 
 void loop()
 {
+  timeClient.setTimeOffset(getTimeOffset());
   timeClient.update();
-  int hour = timeClient.getHours() + getTimeOffset();
+  int hour = timeClient.getHours();
   int minute = timeClient.getMinutes();
 
   changeBackground();
