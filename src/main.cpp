@@ -109,6 +109,9 @@ int getTimeOffset()
   {
     return 7200;
   }
+  else if (dateMonth == 10 && !isLastSundayOver(weekday, dateDay)){
+    return 7200;
+  }
   else if (dateMonth == 10 && isLastSundayOver(weekday, dateDay)){
     return 3600;
   }
